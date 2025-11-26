@@ -13,7 +13,6 @@ export const useAudioProcessor = () => {
     error: null,
   });
 
-  console.log('useAudioProcessor render, processingState:', processingState); // デバッグ追加
   const audioContextRef = useRef<AudioContext | null>(null);
 
   const getAudioContext = useCallback(() => {
@@ -46,18 +45,37 @@ export const useAudioProcessor = () => {
     [getAudioContext],
   );
 
+  const updateProgress = useCallback((progress: number) => {
+    console.log("useAudioProcessor: updateProgress called with:", progress);
+    setProcessingState((prev) => {
+      console.log("useAudioProcessor: updateProgress - prev state:", prev);
+      const newState = {
+        ...prev,
+        progress,
+      };
+      console.log("useAudioProcessor: updateProgress - new state:", newState);
+      return newState;
+    });
+  }, []);
+
   const mixAudio = useCallback(
     async (
       original: AudioFile,
       bgm: AudioFile,
       params: MixParams,
     ): Promise<MixedAudio> => {
-      console.log('mixAudio start'); // デバッグ追加
-      setProcessingState(prev => {
-        console.log('setProcessingState function called, prev:', prev);
-        return { isProcessing: true, progress: 0, error: null };
+      console.log("useAudioProcessor: mixAudio called");
+
+      // 開始時の状態設定
+      console.log("useAudioProcessor: Setting initial processing state");
+      setProcessingState({
+        isProcessing: true,
+        progress: 0,
+        error: null,
       });
-      console.log('setProcessingState called'); // デバッグ追加
+
+      // 状態設定の確認用 - 少し待機
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       try {
         if (!original.buffer || !bgm.buffer) {
@@ -83,7 +101,9 @@ export const useAudioProcessor = () => {
             break;
         }
 
-        setProcessingState((prev) => ({ ...prev, progress: 20 }));
+        console.log("useAudioProcessor: Calling updateProgress(20)");
+        updateProgress(20);
+        await new Promise((resolve) => setTimeout(resolve, 200)); // 状態確認用
 
         // サンプルレートとチャンネル数
         const sampleRate = audioContext.sampleRate;
@@ -100,7 +120,9 @@ export const useAudioProcessor = () => {
           sampleRate,
         );
 
-        setProcessingState((prev) => ({ ...prev, progress: 40 }));
+        console.log("useAudioProcessor: Calling updateProgress(40)");
+        updateProgress(40);
+        await new Promise((resolve) => setTimeout(resolve, 200)); // 状態確認用
 
         // チャンネルごとに処理
         for (let channel = 0; channel < channels; channel++) {
@@ -160,11 +182,13 @@ export const useAudioProcessor = () => {
           }
         }
 
-        setProcessingState((prev) => ({ ...prev, progress: 80 }));
+        console.log("useAudioProcessor: Calling updateProgress(80)");
+        updateProgress(80);
+        await new Promise((resolve) => setTimeout(resolve, 200)); // 状態確認用
 
         // AudioBufferをBlobに変換
         const length = outputBuffer.length;
-        const arrayBuffer = new ArrayBuffer(44 + length * 2);
+        const arrayBuffer = new ArrayBuffer(44 + length * channels * 2);
         const view = new DataView(arrayBuffer);
 
         // WAVヘッダー作成
@@ -175,7 +199,7 @@ export const useAudioProcessor = () => {
         };
 
         writeString(0, "RIFF");
-        view.setUint32(4, 36 + length * 2, true);
+        view.setUint32(4, 36 + length * channels * 2, true);
         writeString(8, "WAVE");
         writeString(12, "fmt ");
         view.setUint32(16, 16, true);
@@ -186,22 +210,22 @@ export const useAudioProcessor = () => {
         view.setUint16(32, channels * 2, true);
         view.setUint16(34, 16, true);
         writeString(36, "data");
-        view.setUint32(40, length * 2, true);
+        view.setUint32(40, length * channels * 2, true);
 
         // 音声データ書き込み
         let offset = 44;
         for (let i = 0; i < length; i++) {
-          let sample = 0;
           for (let channel = 0; channel < channels; channel++) {
-            sample += outputBuffer.getChannelData(channel)[i];
+            const sample = outputBuffer.getChannelData(channel)[i];
+            const intSample = Math.max(-1, Math.min(1, sample)) * 0x7fff;
+            view.setInt16(offset, intSample, true);
+            offset += 2;
           }
-          sample = sample / channels; // チャンネル平均
-          const intSample = Math.max(-1, Math.min(1, sample)) * 0x7fff;
-          view.setInt16(offset, intSample, true);
-          offset += 2;
         }
 
-        setProcessingState((prev) => ({ ...prev, progress: 100 }));
+        console.log("useAudioProcessor: Calling updateProgress(100)");
+        updateProgress(100);
+        await new Promise((resolve) => setTimeout(resolve, 200)); // 状態確認用
 
         const blob = new Blob([arrayBuffer], { type: "audio/wav" });
         const url = URL.createObjectURL(blob);
@@ -212,24 +236,35 @@ export const useAudioProcessor = () => {
           duration: finalDuration,
         };
 
-        setProcessingState({ isProcessing: false, progress: 100, error: null });
-        setProcessingState(prev => {
-          console.log('setProcessingState complete, prev:', prev);
-          return { isProcessing: false, progress: 100, error: null };
+        // 完了状態を設定
+        console.log("useAudioProcessor: Setting final completion state");
+        setProcessingState({
+          isProcessing: false,
+          progress: 100,
+          error: null,
         });
+
         return result;
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : "Unknown error";
+
+        console.log("useAudioProcessor: Error occurred:", errorMessage);
         setProcessingState({
           isProcessing: false,
           progress: 0,
-          error: errorMessage
+          error: errorMessage,
         });
+
         throw error;
       }
     },
-    [getAudioContext],
+    [getAudioContext, updateProgress],
+  );
+
+  console.log(
+    "useAudioProcessor: Hook render, processingState:",
+    processingState,
   );
 
   return {

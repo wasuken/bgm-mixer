@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Spinner, Card, Form, Row, Col, Button } from 'react-bootstrap';
-import type { MixParams } from '../types/audio';
+import React from "react";
+import { Spinner, Card, Form, Row, Col, Button } from "react-bootstrap";
+import type { MixParams } from "../types/audio";
 
 interface MixerControlsProps {
   params: MixParams;
@@ -15,51 +15,79 @@ export const MixerControls: React.FC<MixerControlsProps> = ({
   onChange,
   onMix,
   disabled = false,
+  isProcessing = false,
 }) => {
-  const [isLoading, setIsLoading] = useState(false);
-
   const handleMix = () => {
-    setIsLoading(true);
-    onMix().finally(() => setIsLoading(false));
-  }
-  const handleNumberChange = (key: keyof Pick<MixParams, 'originalVolume' | 'bgmVolume' | 'fadeInDuration' | 'fadeOutDuration' | 'bgmStartOffset'>, value: number) => {
+    console.log("MixerControls: handleMix called");
+    onMix();
+  };
+
+  const handleNumberChange = (
+    key: keyof Pick<
+      MixParams,
+      | "originalVolume"
+      | "bgmVolume"
+      | "fadeInDuration"
+      | "fadeOutDuration"
+      | "bgmStartOffset"
+    >,
+    value: number,
+  ) => {
     onChange({ ...params, [key]: value });
   };
 
-  const handleStringChange = (key: 'strategy', value: MixParams['strategy']) => {
+  const handleStringChange = (
+    key: "strategy",
+    value: MixParams["strategy"],
+  ) => {
     onChange({ ...params, [key]: value });
   };
+
+  console.log(
+    "MixerControls: Render - disabled:",
+    disabled,
+    "isProcessing:",
+    isProcessing,
+  );
 
   return (
     <Card className="mb-3">
-      <Card.Header>
-        <h5>Mix Settings</h5>
-      </Card.Header>
       <Card.Body>
         {/* 音量調整 */}
         <Row className="mb-3">
           <Col md={6}>
             <Form.Group>
-              <Form.Label>Original Volume: {Math.round(params.originalVolume * 100)}%</Form.Label>
+              <Form.Label>
+                Original Volume: {Math.round(params.originalVolume * 100)}%
+              </Form.Label>
               <Form.Range
                 min={0}
                 max={1}
                 step={0.01}
                 value={params.originalVolume}
-                onChange={(e) => handleNumberChange('originalVolume', parseFloat(e.target.value))}
+                onChange={(e) =>
+                  handleNumberChange(
+                    "originalVolume",
+                    parseFloat(e.target.value),
+                  )
+                }
                 disabled={disabled}
               />
             </Form.Group>
           </Col>
           <Col md={6}>
             <Form.Group>
-              <Form.Label>BGM Volume: {Math.round(params.bgmVolume * 100)}%</Form.Label>
+              <Form.Label>
+                BGM Volume: {Math.round(params.bgmVolume * 100)}%
+              </Form.Label>
               <Form.Range
                 min={0}
                 max={1}
                 step={0.01}
                 value={params.bgmVolume}
-                onChange={(e) => handleNumberChange('bgmVolume', parseFloat(e.target.value))}
+                onChange={(e) =>
+                  handleNumberChange("bgmVolume", parseFloat(e.target.value))
+                }
                 disabled={disabled}
               />
             </Form.Group>
@@ -70,26 +98,40 @@ export const MixerControls: React.FC<MixerControlsProps> = ({
         <Row className="mb-3">
           <Col md={6}>
             <Form.Group>
-              <Form.Label>Fade In Duration: {params.fadeInDuration}s</Form.Label>
+              <Form.Label>
+                Fade In Duration: {params.fadeInDuration}s
+              </Form.Label>
               <Form.Range
                 min={0}
                 max={10}
                 step={0.1}
                 value={params.fadeInDuration}
-                onChange={(e) => handleNumberChange('fadeInDuration', parseFloat(e.target.value))}
+                onChange={(e) =>
+                  handleNumberChange(
+                    "fadeInDuration",
+                    parseFloat(e.target.value),
+                  )
+                }
                 disabled={disabled}
               />
             </Form.Group>
           </Col>
           <Col md={6}>
             <Form.Group>
-              <Form.Label>Fade Out Duration: {params.fadeOutDuration}s</Form.Label>
+              <Form.Label>
+                Fade Out Duration: {params.fadeOutDuration}s
+              </Form.Label>
               <Form.Range
                 min={0}
                 max={10}
                 step={0.1}
                 value={params.fadeOutDuration}
-                onChange={(e) => handleNumberChange('fadeOutDuration', parseFloat(e.target.value))}
+                onChange={(e) =>
+                  handleNumberChange(
+                    "fadeOutDuration",
+                    parseFloat(e.target.value),
+                  )
+                }
                 disabled={disabled}
               />
             </Form.Group>
@@ -100,13 +142,20 @@ export const MixerControls: React.FC<MixerControlsProps> = ({
         <Row className="mb-3">
           <Col md={6}>
             <Form.Group>
-              <Form.Label>BGM Start Offset: {params.bgmStartOffset}s</Form.Label>
+              <Form.Label>
+                BGM Start Offset: {params.bgmStartOffset}s
+              </Form.Label>
               <Form.Range
                 min={0}
                 max={30}
                 step={0.1}
                 value={params.bgmStartOffset}
-                onChange={(e) => handleNumberChange('bgmStartOffset', parseFloat(e.target.value))}
+                onChange={(e) =>
+                  handleNumberChange(
+                    "bgmStartOffset",
+                    parseFloat(e.target.value),
+                  )
+                }
                 disabled={disabled}
               />
             </Form.Group>
@@ -116,7 +165,12 @@ export const MixerControls: React.FC<MixerControlsProps> = ({
               <Form.Label>Length Strategy</Form.Label>
               <Form.Select
                 value={params.strategy}
-                onChange={(e) => handleStringChange('strategy', e.target.value as MixParams['strategy'])}
+                onChange={(e) =>
+                  handleStringChange(
+                    "strategy",
+                    e.target.value as MixParams["strategy"],
+                  )
+                }
                 disabled={disabled}
               >
                 <option value="fit_to_original">Fit to Original</option>
@@ -134,14 +188,16 @@ export const MixerControls: React.FC<MixerControlsProps> = ({
               variant="outline-secondary"
               size="sm"
               className="me-2"
-              onClick={() => onChange({
-                originalVolume: 1.0,
-                bgmVolume: 0.25,
-                fadeInDuration: 2.0,
-                fadeOutDuration: 1.0,
-                strategy: 'loop_bgm',
-                bgmStartOffset: 0
-              })}
+              onClick={() =>
+                onChange({
+                  originalVolume: 1.0,
+                  bgmVolume: 0.25,
+                  fadeInDuration: 2.0,
+                  fadeOutDuration: 1.0,
+                  strategy: "loop_bgm",
+                  bgmStartOffset: 0,
+                })
+              }
               disabled={disabled}
             >
               Subtle BGM
@@ -150,14 +206,16 @@ export const MixerControls: React.FC<MixerControlsProps> = ({
               variant="outline-secondary"
               size="sm"
               className="me-2"
-              onClick={() => onChange({
-                originalVolume: 0.8,
-                bgmVolume: 0.5,
-                fadeInDuration: 3.0,
-                fadeOutDuration: 2.0,
-                strategy: 'loop_bgm',
-                bgmStartOffset: 0
-              })}
+              onClick={() =>
+                onChange({
+                  originalVolume: 0.8,
+                  bgmVolume: 0.5,
+                  fadeInDuration: 3.0,
+                  fadeOutDuration: 2.0,
+                  strategy: "loop_bgm",
+                  bgmStartOffset: 0,
+                })
+              }
               disabled={disabled}
             >
               Balanced Mix
@@ -165,14 +223,16 @@ export const MixerControls: React.FC<MixerControlsProps> = ({
             <Button
               variant="outline-secondary"
               size="sm"
-              onClick={() => onChange({
-                originalVolume: 0.6,
-                bgmVolume: 0.8,
-                fadeInDuration: 1.0,
-                fadeOutDuration: 1.0,
-                strategy: 'fit_to_original',
-                bgmStartOffset: 0
-              })}
+              onClick={() =>
+                onChange({
+                  originalVolume: 0.6,
+                  bgmVolume: 0.8,
+                  fadeInDuration: 1.0,
+                  fadeOutDuration: 1.0,
+                  strategy: "fit_to_original",
+                  bgmStartOffset: 0,
+                })
+              }
               disabled={disabled}
             >
               BGM Focus
@@ -187,10 +247,10 @@ export const MixerControls: React.FC<MixerControlsProps> = ({
               variant="success"
               size="lg"
               onClick={handleMix}
-              disabled={disabled || isLoading}
+              disabled={disabled || isProcessing}
               className="w-100"
             >
-              {isLoading ? (
+              {isProcessing ? (
                 <>
                   <Spinner
                     as="span"
@@ -199,7 +259,7 @@ export const MixerControls: React.FC<MixerControlsProps> = ({
                     role="status"
                     className="me-2"
                   />
-                  mixing...
+                  Mixing...
                 </>
               ) : (
                 "🎵 Mix Audio"

@@ -1,17 +1,16 @@
-import React, { useState } from 'react';
-import { Container, Row, Col, Alert } from 'react-bootstrap';
-import 'bootstrap/dist/css/bootstrap.min.css';
+import React, { useState } from "react";
+import { Container, Row, Col, Alert } from "react-bootstrap";
+import "bootstrap/dist/css/bootstrap.min.css";
 
-import { FileUploader } from './components/FileUploader';
-import { AudioPreview } from './components/AudioPreview';
-import { MixerControls } from './components/MixerControls';
-import { AudioProcessor } from './components/AudioProcessor';
-import { ResultPlayer } from './components/ResultPlayer';
-import { useAudioProcessor } from './hooks/useAudioProcessor';
-import type { AudioFile, MixParams, MixedAudio } from './types/audio';
+import { FileUploader } from "./components/FileUploader";
+import { AudioPreview } from "./components/AudioPreview";
+import { MixerControls } from "./components/MixerControls";
+import { AudioProcessor } from "./components/AudioProcessor";
+import { ResultPlayer } from "./components/ResultPlayer";
+import { useAudioProcessor } from "./hooks/useAudioProcessor";
+import type { AudioFile, MixParams, MixedAudio } from "./types/audio";
 
 const App: React.FC = () => {
-  const [isMixing, setIsMixing] = useState(false);
   const [originalAudio, setOriginalAudio] = useState<AudioFile | null>(null);
   const [bgmAudio, setBgmAudio] = useState<AudioFile | null>(null);
   const [mixedAudio, setMixedAudio] = useState<MixedAudio | null>(null);
@@ -22,8 +21,8 @@ const App: React.FC = () => {
     bgmVolume: 0.25,
     fadeInDuration: 2.0,
     fadeOutDuration: 1.0,
-    strategy: 'loop_bgm',
-    bgmStartOffset: 0
+    strategy: "loop_bgm",
+    bgmStartOffset: 0,
   });
 
   const { mixAudio, processingState } = useAudioProcessor();
@@ -39,31 +38,28 @@ const App: React.FC = () => {
   };
 
   const handleMix = async () => {
-    if (isMixing) {
-      console.log('Already mixing, ignoring click');
+    if (processingState.isProcessing) {
+      console.log("App.tsx: Already processing, returning");
       return;
     }
 
     if (!originalAudio || !bgmAudio) {
-      setError('Please load both original audio and BGM files');
+      setError("Please load both original audio and BGM files");
       return;
     }
-
-    setIsMixing(true);
 
     try {
       setError(null);
       const result = await mixAudio(originalAudio, bgmAudio, mixParams);
       setMixedAudio(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to mix audio');
-    } finally {
-      setIsMixing(false);
+      console.log("App.tsx: mixAudio error:", err);
+      setError(err instanceof Error ? err.message : "Failed to mix audio");
     }
   };
 
-  const canMix = originalAudio && bgmAudio;
-  console.log('processingState.isProcessing:', processingState.isProcessing); // デバッグ用
+  const canMix =
+    originalAudio != null && bgmAudio != null && !processingState.isProcessing;
 
   return (
     <Container className="py-4">
@@ -106,26 +102,19 @@ const App: React.FC = () => {
             onFileLoad={handleBgmFileLoad}
             onError={setError}
           />
-          <AudioPreview
-            title="BGM Preview"
-            audioFile={bgmAudio}
-          />
+          <AudioPreview title="BGM Preview" audioFile={bgmAudio} />
         </Col>
       </Row>
 
       <Row>
         <Col>
-          {isMixing ? (
-            <>Mixing...</>
-          ) : (
-            <MixerControls
-              params={mixParams}
-              onChange={setMixParams}
-              onMix={handleMix}
-              disabled={!canMix}
-            />
-
-          )}
+          <MixerControls
+            params={mixParams}
+            onChange={setMixParams}
+            onMix={handleMix}
+            disabled={!canMix}
+            isProcessing={processingState.isProcessing}
+          />
         </Col>
       </Row>
 
